@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teste do Firebase · Biblioteca Encantada</title>
+<style>body{font:18px/1.5 system-ui,sans-serif;max-width:640px;margin:0 auto;padding:18px;background:#0b2a3a;color:#f4e9c8}h1{font-size:24px;color:#f2c14e}
+button{font:700 18px system-ui;padding:10px 14px;margin:6px 6px 6px 0;border:3px solid #2a1a0c;border-radius:6px;background:#f2c14e;cursor:pointer}
+.r{background:#fffaf0;color:#2a1a0c;border-radius:6px;padding:10px 12px;margin:8px 0;word-break:break-word}.ok{border-left:8px solid #3f9b4f}.no{border-left:8px solid #c0392b}small{opacity:.85}</style></head>
+<body><h1>Teste do Firebase</h1>
+<p>Rode os 3 testes na ordem. Cada um diz se passou e, se falhar, o que fazer.</p>
+<p><small>Banco: <b id="db"></b></small></p>
+<button id="b1">1. Ler o banco</button><button id="b2">2. Gravar uma pontuação de teste</button><button id="b3">3. Tentar baixar a nota (deve ser recusado)</button>
+<div id="out"></div>
+<script>
+var DB="https://quiz-marc-default-rtdb.firebaseio.com",$=function(i){return document.getElementById(i)};$("db").textContent=DB;
+function show(ok,t,d){var e=document.createElement("div");e.className="r "+(ok?"ok":"no");e.innerHTML="<b>"+(ok?"PASSOU":"FALHOU")+"</b> · "+t+(d?"<br><small>"+d+"</small>":"");$("out").prepend(e)}
+function call(p,m,b){return fetch(DB+p+".json",{method:m||"GET",headers:{"Content-Type":"application/json"},body:b?JSON.stringify(b):undefined}).then(function(r){return r.text().then(function(t){return{s:r.status,t:t}})})}
+function why(r){if(r.s===401||/permission/i.test(r.t))return"O Firebase recusou (Permission denied). Cole as regras do arquivo regras-firebase.json em Realtime Database > Regras e clique em Publicar.";if(r.s===404||/not found|404/i.test(r.t))return"Banco não encontrado. Confira o endereço do Realtime Database no topo desta página e no index.html.";return"Resposta: "+r.s+" "+r.t.slice(0,160)}
+function net(e){return"Sem conexão com o Firebase: "+e.message+". Confira a internet e se o endereço do banco está certo. Se abriu este arquivo direto do computador, publique no GitHub Pages e teste de lá."}
+$("b1").onclick=function(){call("/ranking").then(function(r){if(r.s===200)show(true,"Consegui LER o ranking.","Conteúdo atual: "+(r.t==="null"?"vazio (normal antes do primeiro jogo)":r.t.slice(0,120)));else show(false,"Leitura recusada.",why(r))}).catch(function(e){show(false,"Leitura sem resposta.",net(e))})};
+$("b2").onclick=function(){var id="teste_"+Date.now();call("/ranking/L9/"+id,"PUT",{n:"Teste",s:123,t:10,ts:Date.now()}).then(function(r){if(r.s===200)show(true,"Consegui GRAVAR uma pontuação.","Ela foi para o nível 9, que o jogo não mostra. Pode apagar depois em Dados > ranking > L9.");else show(false,"Gravação recusada.",why(r))}).catch(function(e){show(false,"Gravação sem resposta.",net(e))})};
+$("b3").onclick=function(){var id="teste_regra";call("/ranking/L9/"+id,"PUT",{n:"Teste",s:500,t:10,ts:1}).then(function(){return call("/ranking/L9/"+id,"PUT",{n:"Teste",s:100,t:10,ts:2})}).then(function(r){if(r.s===401||/permission/i.test(r.t))show(true,"As regras estão protegendo o ranking: a nota mais baixa foi recusada.");else show(false,"A regra NÃO recusou a nota mais baixa.","As regras do arquivo regras-firebase.json provavelmente não foram publicadas. Cole e publique de novo.")}).catch(function(e){show(false,"Teste sem resposta.",net(e))})};
+</script></body></html>
